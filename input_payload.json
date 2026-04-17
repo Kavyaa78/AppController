@@ -1,0 +1,22 @@
+[
+  {
+    "BAN": 847362910,
+    "TRANS_ID": 100042,
+    "IMEI_NO": "358743081234567",
+    "trans_ts": "2026-04-17T10:35:22Z",
+    "self_srv_email_id": "john.doe@selfserve.example.com",
+    "email_id_1": "john.doe@gmail.com",
+    "email_id_2": "johndoe.work@outlook.com",
+    "dlr_nm": "TechMart Electronics",
+    "f_name": "John",
+    "l_name": "Doe",
+    "bill_adr": "123 Maple Street",
+    "bill_city": "Toronto",
+    "bill_prov": "ON",
+    "bill_post_cd": "M5H 2N2",
+    "ship_adr": "456 Oak Avenue",
+    "ship_city": "Mississauga",
+    "ship_prov": "ON",
+    "ship_pc": "L5B 3A1"
+  }
+]
