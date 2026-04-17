@@ -60,7 +60,10 @@ def _post_predict(endpoint_url: str, payload_records: list[dict[str, Any]], time
     except error.URLError as url_err:
         return {"status_code": None, "response_body": f"URLError: {url_err}"}
     except TimeoutError:
-        return {"status_code": None, "response_body": "TimeoutError"}
+        return {
+            "status_code": None,
+            "response_body": f"Request to prediction endpoint timed out after {timeout} seconds",
+        }
 
 
 def parse_args() -> argparse.Namespace:
@@ -95,7 +98,13 @@ def main() -> None:
     imei_neg = _read_optional_csv(Path(args.imei_neg_csv), ["ESN", "ENTER_DATE", "SUB_STATUS_RSN_CD"])
     imei_com = _read_optional_csv(Path(args.imei_com_csv), ["UNIT_ESN"])
 
-    processed_df, *_ = prep_df(raw_df, bad_actor, bad_actor_smb, imei_neg, imei_com)
+    (
+        processed_df,
+        _bad_actor_set,
+        _bad_actor_smb_set,
+        _imei_neg_set,
+        _imei_com_set,
+    ) = prep_df(raw_df, bad_actor, bad_actor_smb, imei_neg, imei_com)
     predict_payload = _build_predict_payload(processed_df, args.max_records)
 
     output_path = Path(args.output_json)
