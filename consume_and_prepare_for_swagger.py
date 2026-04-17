@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 from pathlib import Path
 from typing import Any
 from urllib import error, request
@@ -59,7 +60,7 @@ def _post_predict(endpoint_url: str, payload_records: list[dict[str, Any]], time
         return {"status_code": http_err.code, "response_body": body}
     except error.URLError as url_err:
         return {"status_code": None, "response_body": f"URLError: {url_err}"}
-    except TimeoutError:
+    except (socket.timeout, TimeoutError):
         return {
             "status_code": None,
             "response_body": f"Request to prediction endpoint timed out after {timeout} seconds",
