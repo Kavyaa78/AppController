@@ -29,6 +29,8 @@ def _load_optional_csv(prefix: str, empty_columns: list[str]) -> pd.DataFrame:
     if not matches:
         print(f"WARNING: optional file not found, using empty frame for prefix: {prefix}")
         return pd.DataFrame(columns=empty_columns)
+    if len(matches) > 1:
+        print(f"WARNING: multiple optional files found for {prefix}, using: {matches[0]}")
 
     return pd.read_csv(matches[0])
 
@@ -39,7 +41,11 @@ def _build_predict_payload(df: pd.DataFrame) -> list[dict]:
             df[column] = None
 
     for int_column in ("TRANS_ID", "BAN"):
-        df[int_column] = pd.to_numeric(df[int_column], errors="coerce").fillna(0).astype(int)
+        numeric_values = pd.to_numeric(df[int_column], errors="coerce")
+        invalid_count = int(numeric_values.isna().sum())
+        if invalid_count:
+            print(f"WARNING: {invalid_count} invalid values in {int_column}; coerced to 0")
+        df[int_column] = numeric_values.fillna(0).astype(int)
 
     return df[PREDICT_COLUMNS].to_dict(orient="records")
 
@@ -48,24 +54,36 @@ def _post_payload(payload: list[dict], predict_url: str | None) -> None:
     from sender import post_to_predict_endpoint
 
     sig = inspect.signature(post_to_predict_endpoint)
-    param_names = list(sig.parameters.keys())
+    params = sig.parameters
+    param_names = list(params.keys())
+    args = []
     kwargs = {}
 
-    if "payload" in sig.parameters:
+    if "payload" in params:
         kwargs["payload"] = payload
     elif param_names:
-        kwargs[param_names[0]] = payload
+        args.append(payload)
+    else:
+        raise TypeError("sender.post_to_predict_endpoint must accept at least one payload argument.")
 
     if predict_url:
         for candidate in ("predict_url", "url", "endpoint_url", "endpoint"):
-            if candidate in sig.parameters:
+            if candidate in params:
                 kwargs[candidate] = predict_url
                 break
         else:
             if len(param_names) > 1:
-                kwargs[param_names[1]] = predict_url
+                args.append(predict_url)
+            else:
+                raise TypeError(
+                    "sender.post_to_predict_endpoint does not expose a URL parameter compatible with --predict-url."
+                )
 
-    response = post_to_predict_endpoint(**kwargs)
+    try:
+        response = post_to_predict_endpoint(*args, **kwargs)
+    except Exception as exc:
+        raise RuntimeError(f"Failed to post generated payload via sender.post_to_predict_endpoint: {exc}") from exc
+
     print("Predict response:")
     print(response)
 
